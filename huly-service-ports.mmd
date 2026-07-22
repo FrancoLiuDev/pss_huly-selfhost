@@ -1,0 +1,133 @@
+%%{init: {"flowchart": {"rankSpacing": 60, "nodeSpacing": 40}} }%%
+flowchart TD
+
+    %% ─────────────────────────────────────────
+    %% External
+    %% ─────────────────────────────────────────
+    CLIENT([Client Browser])
+
+    %% ─────────────────────────────────────────
+    %% Host Layer
+    %% ─────────────────────────────────────────
+    subgraph HOST["Host Layer  (nginx.conf)"]
+        HNGINX["nginx (host)\nlisten :80 / :443 ssl\nserver_name: HOST_ADDRESS\nproxy_pass: HTTP_BIND:HTTP_PORT\n(default → 127.0.0.1:8087)"]
+    end
+
+    %% ─────────────────────────────────────────
+    %% Docker: huly_net
+    %% ─────────────────────────────────────────
+    subgraph DOCKER["Docker  ·  network: huly_net  (compose.yml)"]
+
+        subgraph PROXY["Reverse Proxy"]
+            NGINX["nginx (docker)\nimage: nginx:1.21.3\nconfig: .huly.nginx\nExposed: HTTP_BIND:HTTP_PORT:80\n0.0.0.0:8087:80\nlisten :80"]
+        end
+
+        subgraph APPS["Application Services"]
+            FRONT["front\nSERVER_PORT=8080"]
+            ACCOUNT["account\nSERVER_PORT=3000\nACCOUNT_PORT=3000"]
+            TRANSACTOR["transactor\nSERVER_PORT=3333"]
+            COLLABORATOR["collaborator\nCOLLABORATOR_PORT=3078"]
+            REKONI["rekoni\n:4004"]
+            STATS["stats\nPORT=4900"]
+            FULLTEXT["fulltext\n:4700"]
+            WORKSPACE["workspace\n(no exposed port)"]
+            KVS["kvs\nExposed: 8094:8094\nHULY_TOKEN_SECRET=SECRET"]
+        end
+
+        subgraph INFRA["Infrastructure / Data Layer"]
+            COCKROACH["cockroach\n:26257\nCR_DB_URL=postgres://CR_USERNAME:CR_USER_PASSWORD\n@cockroach:26257/CR_DATABASE\nCR_DATABASE=defaultdb"]
+            MINIO["minio\nAPI :9000  Console :9001\nSTORAGE_CONFIG=minio|minio\n?accessKey=minioadmin\n&secretKey=minioadmin"]
+            ELASTIC["elastic (elasticsearch:7.14.2)\nELASTICSEARCH_PORT_NUMBER=9200\nES_JAVA_OPTS=-Xms1024m -Xmx1024m"]
+            REDPANDA["redpanda\nKafka internal:    --kafka-addr internal://0.0.0.0:9092\nKafka external:    --kafka-addr external://0.0.0.0:19092\nPandaProxy internal: --pandaproxy-addr internal://0.0.0.0:8082\nPandaProxy external: --pandaproxy-addr external://0.0.0.0:18082\nSchema Registry:   --schema-registry-addr internal://0.0.0.0:8081\nRPC:               --rpc-addr redpanda:33145\nQUEUE_CONFIG=redpanda:9092"]
+        end
+
+    end
+
+    %% ═══════════════════════════════════════════
+    %% Connections — Entry
+    %% ═══════════════════════════════════════════
+    CLIENT -->|"HTTP / HTTPS"| HNGINX
+    HNGINX -->|"proxy_pass\nHTTP_BIND:HTTP_PORT (:8087)"| NGINX
+
+    %% ═══════════════════════════════════════════
+    %% Connections — nginx (docker) → Services
+    %% ═══════════════════════════════════════════
+    NGINX -->|"location /\nproxy_pass http://front:SERVER_PORT\n→ front:8080"| FRONT
+    NGINX -->|"location /_accounts\nACCOUNTS_URL=http://HOST_ADDRESS/_accounts\n→ account:3000"| ACCOUNT
+    NGINX -->|"location /_collaborator  (WS upgrade)\nCOLLABORATOR_URL=ws://HOST_ADDRESS/_collaborator\n→ collaborator:3078"| COLLABORATOR
+    NGINX -->|"location /_transactor  (WS upgrade)\nTRANSACTOR_URL=ws://transactor:3333\n→ transactor:3333"| TRANSACTOR
+    NGINX -->|"location /_rekoni\nREKONI_URL=http://HOST_ADDRESS/_rekoni\n→ rekoni:4004"| REKONI
+    NGINX -->|"location /_stats\nSTATS_URL=http://HOST_ADDRESS/_stats\n→ stats:4900"| STATS
+    NGINX -->|"location ~ ^/eyJ  (JWT token, WS upgrade)\n→ transactor:3333"| TRANSACTOR
+
+    %% ═══════════════════════════════════════════
+    %% Connections — front
+    %% ═══════════════════════════════════════════
+    FRONT -->|"ACCOUNTS_URL_INTERNAL\nhttp://account:3000"| ACCOUNT
+    FRONT -->|"ELASTIC_URL\nhttp://elastic:9200"| ELASTIC
+    FRONT -->|"STORAGE_CONFIG / UPLOAD_URL=/files\nminio:9000"| MINIO
+
+    %% ═══════════════════════════════════════════
+    %% Connections — account
+    %% ═══════════════════════════════════════════
+    ACCOUNT -->|"DB_URL=CR_DB_URL\npostgres://cockroach:26257"| COCKROACH
+    ACCOUNT -->|"TRANSACTOR_URL\nws://transactor:3333"| TRANSACTOR
+    ACCOUNT -->|"STORAGE_CONFIG\nminio:9000"| MINIO
+    ACCOUNT -->|"QUEUE_CONFIG\nredpanda:9092"| REDPANDA
+    ACCOUNT -->|"STATS_URL\nhttp://stats:4900"| STATS
+
+    %% ═══════════════════════════════════════════
+    %% Connections — transactor
+    %% ═══════════════════════════════════════════
+    TRANSACTOR -->|"DB_URL=CR_DB_URL\npostgres://cockroach:26257"| COCKROACH
+    TRANSACTOR -->|"STORAGE_CONFIG\nminio:9000"| MINIO
+    TRANSACTOR -->|"ACCOUNTS_URL\nhttp://account:3000"| ACCOUNT
+    TRANSACTOR -->|"FULLTEXT_URL\nhttp://fulltext:4700"| FULLTEXT
+    TRANSACTOR -->|"STATS_URL\nhttp://stats:4900"| STATS
+    TRANSACTOR -->|"QUEUE_CONFIG\nredpanda:9092"| REDPANDA
+
+    %% ═══════════════════════════════════════════
+    %% Connections — collaborator
+    %% ═══════════════════════════════════════════
+    COLLABORATOR -->|"ACCOUNTS_URL\nhttp://account:3000"| ACCOUNT
+    COLLABORATOR -->|"STORAGE_CONFIG\nminio:9000"| MINIO
+    COLLABORATOR -->|"STATS_URL\nhttp://stats:4900"| STATS
+
+    %% ═══════════════════════════════════════════
+    %% Connections — fulltext
+    %% ═══════════════════════════════════════════
+    FULLTEXT -->|"DB_URL=CR_DB_URL\npostgres://cockroach:26257"| COCKROACH
+    FULLTEXT -->|"FULLTEXT_DB_URL\nhttp://elastic:9200\nELASTIC_INDEX_NAME=huly_storage_index"| ELASTIC
+    FULLTEXT -->|"STORAGE_CONFIG\nminio:9000"| MINIO
+    FULLTEXT -->|"REKONI_URL\nhttp://rekoni:4004"| REKONI
+    FULLTEXT -->|"ACCOUNTS_URL\nhttp://account:3000"| ACCOUNT
+    FULLTEXT -->|"STATS_URL\nhttp://stats:4900"| STATS
+    FULLTEXT -->|"QUEUE_CONFIG\nredpanda:9092"| REDPANDA
+
+    %% ═══════════════════════════════════════════
+    %% Connections — workspace
+    %% ═══════════════════════════════════════════
+    WORKSPACE -->|"DB_URL=CR_DB_URL\nACCOUNTS_DB_URL=CR_DB_URL\npostgres://cockroach:26257"| COCKROACH
+    WORKSPACE -->|"TRANSACTOR_URL\nws://transactor:3333"| TRANSACTOR
+    WORKSPACE -->|"STORAGE_CONFIG\nminio:9000"| MINIO
+    WORKSPACE -->|"ACCOUNTS_URL\nhttp://account:3000"| ACCOUNT
+    WORKSPACE -->|"STATS_URL\nhttp://stats:4900"| STATS
+    WORKSPACE -->|"QUEUE_CONFIG\nredpanda:9092"| REDPANDA
+
+    %% ═══════════════════════════════════════════
+    %% Connections — kvs
+    %% ═══════════════════════════════════════════
+    KVS -->|"HULY_DB_CONNECTION=CR_DB_URL\npostgres://cockroach:26257"| COCKROACH
+
+    %% ─────────────────────────────────────────
+    %% Styling
+    %% ─────────────────────────────────────────
+    classDef external  fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    classDef proxy     fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef app       fill:#fff8e1,stroke:#f57f17,color:#3e2723
+    classDef infra     fill:#fce4ec,stroke:#c62828,color:#4a0000
+
+    class CLIENT external
+    class HNGINX,NGINX proxy
+    class FRONT,ACCOUNT,TRANSACTOR,COLLABORATOR,REKONI,STATS,FULLTEXT,WORKSPACE,KVS app
+    class COCKROACH,MINIO,ELASTIC,REDPANDA infra
