@@ -1,6 +1,6 @@
 server {
     server_name localhost:8087;
-    listen ;
+    listen 80;
     location / {
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
