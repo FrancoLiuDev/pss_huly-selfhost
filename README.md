@@ -133,7 +133,8 @@ sudo ln -s $(pwd)/nginx.conf /etc/nginx/sites-enabled/huly.conf
 > by running:
 > ```bash
 > ./nginx.sh
-> ```
+ 
+> ```test
 >You can safely execute this script after adding your custom configurations like ssl. It will only overwrite the
 > necessary settings.
 
