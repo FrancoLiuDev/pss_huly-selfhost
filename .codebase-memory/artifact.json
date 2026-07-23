@@ -1,0 +1,11 @@
+{
+    "schema_version": 2,
+    "commit": "fc3221de7733933c0b573aecc734d4d11796b8b8",
+    "indexed_at": "2026-07-23T06:47:39Z",
+    "project": "home-franco-Documents-projects-pss_huly-selfhost",
+    "nodes": 791,
+    "edges": 784,
+    "original_size": 1703936,
+    "compressed_size": 70060,
+    "compression_level": 9
+}
