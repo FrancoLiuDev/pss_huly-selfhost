@@ -1,1 +1,7 @@
 sudo nginx -t && sudo systemctl reload nginx
+
+# 確認 nginx 是否由 systemd 管理
+systemctl status nginx
+
+# 或確認是否有 nginx process
+ps aux | grep nginx
