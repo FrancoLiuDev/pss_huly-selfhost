@@ -10,3 +10,48 @@ ls -la /etc/nginx/sites-enabled/
 
 # 查看 nginx 實際載入了哪些設定
 sudo nginx -T 2>/dev/null | grep -E "server_name|listen|proxy_pass|configuration"
+
+franco@franco:~/Documents/app/pss_huly-selfhost.git/pss_huly-selfhost$ # 或確認是否有 nginx process
+ps aux | grep nginx
+# 查看 sites-enabled 裡有什麼
+ls -la /etc/nginx/sites-enabled/
+
+# 查看 nginx 實際載入了哪些設定
+sudo nginx -T 2>/dev/null | grep -E "server_name|listen|proxy_pass|configuration"
+root      269661  0.0  0.0  15660  9776 ?        S    05:59   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+root      314935  0.0  0.0  10808  6684 ?        Ss   07:05   0:00 nginx: master process nginx -g daemon off;
+pollina+  315012  0.0  0.0  11276  3716 ?        S    07:05   0:00 nginx: worker process
+pollina+  315013  0.0  0.0  11276  3068 ?        S    07:05   0:00 nginx: worker process
+www-data  327384  0.0  0.0  17276  5828 ?        S    07:26   0:00 nginx: worker process
+www-data  327385  0.0  0.0  17276  6004 ?        S    07:26   0:00 nginx: worker process
+franco    331186  0.0  0.0   6720  2660 pts/0    S+   07:33   0:00 grep --color=autonginx
+total 12
+drwxr-xr-x 2 root root 4096 Jul 23 07:26 .
+drwxr-xr-x 8 root root 4096 Jul 23 05:59 ..
+lrwxrwxrwx 1 root root   34 Jul 23 05:59 default -> /etc/nginx/sites-available/default
+lrwxrwxrwx 1 root root   77 Jul 23 07:26 huly.conf -> /home/franco/Documents/app/pss_huly-selfhost.git/pss_huly-selfhost/nginx.conf
+# configuration file /etc/nginx/nginx.conf:
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+#               listen     localhost:110;
+#               listen     localhost:143;
+# configuration file /etc/nginx/mime.types:
+# configuration file /etc/nginx/sites-enabled/default:
+# of Nginx configuration files in order to fully unleash the power of Nginx.
+# This file will automatically load configuration files provided by other
+# Default server configuration
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        # SSL configuration
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+        # Read up on ssl_ciphers to ensure a secure configuration.
+        server_name _;
+# Virtual Host configuration for example.com
+#       listen 80;
+#       listen [::]:80;
+#       server_name example.com;
+# configuration file /etc/nginx/sites-enabled/huly.conf:
+    server_name localhost;
+    listen 80;
+      proxy_pass http://127.0.0.1:8087;
