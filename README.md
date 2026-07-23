@@ -978,4 +978,4 @@ sudo rm /etc/nginx/sites-enabled/huly.conf
 sudo ln -s /home/franco/Documents/app/pss_huly-selfhost.git/pss_huly-selfhost/nginx.conf /etc/nginx/sites-enabled/huly.conf
 
 # 3. 測試並重新載入
-sudo nginx -t && sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx 
