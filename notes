@@ -5,31 +5,8 @@ systemctl status nginx
 
 # 或確認是否有 nginx process
 ps aux | grep nginx
+# 查看 sites-enabled 裡有什麼
+ls -la /etc/nginx/sites-enabled/
 
-franco@franco:~/Documents/app/pss_huly-selfhost.git/pss_huly-selfhost$ # 確認 nginx  是否由 systemd 管理
-systemctl status nginx
-
-# 或確認是否有 nginx process
-ps aux | grep nginx
-● nginx.service - A high performance web server and a reverse proxy server
-     Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; preset: enabled)
-     Active: active (running) since Thu 2026-07-23 05:59:12 UTC; 1h 15min ago
- Invocation: 70660555c8134ef5893423c50ff7f09d
-       Docs: man:nginx(8)
-    Process: 269627 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process >
-    Process: 269629 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code>
-    Process: 319309 ExecReload=/usr/sbin/nginx -g daemon on; master_process on; -s r>
-   Main PID: 269661 (nginx)
-      Tasks: 3 (limit: 13643)
-     Memory: 3.2M (peak: 7M)
-        CPU: 43ms
-     CGroup: /system.slice/nginx.service
-             ├─269661 "nginx: master process /usr/sbin/nginx -g daemon on; master_pr>
-             ├─319311 "nginx: worker process"
-             └─319312 "nginx: worker process"
-
-Jul 23 05:59:11 franco systemd[1]: Starting nginx.service - A high performance web s>
-Jul 23 05:59:12 franco systemd[1]: Started nginx.service - A high performance web se>
-Jul 23 07:12:52 franco systemd[1]: Reloading nginx.service - A high performance web >
-Jul 23 07:12:52 franco nginx[319309]: 2026/07/23 07:12:52 [notice] 319309#319309: si>
-Jul 23 07:12:52 franco systemd[1]: Reloaded nginx.service - A high performance we
+# 查看 nginx 實際載入了哪些設定
+sudo nginx -T 2>/dev/null | grep -E "server_name|listen|proxy_pass|configuration"
