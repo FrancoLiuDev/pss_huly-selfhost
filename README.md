@@ -966,3 +966,16 @@ After the service is running:
 
 > **Note**  
 > Notification settings are user-specific. Each user must configure Telegram notifications individually.
+
+
+### 修改 huly.conf 後  
+
+# 1. 移除 default 站台
+sudo rm /etc/nginx/sites-enabled/default
+
+# 2. 修正 symlink 指向正確的檔案
+sudo rm /etc/nginx/sites-enabled/huly.conf
+sudo ln -s /home/franco/Documents/app/pss_huly-selfhost.git/pss_huly-selfhost/nginx.conf /etc/nginx/sites-enabled/huly.conf
+
+# 3. 測試並重新載入
+sudo nginx -t && sudo systemctl reload nginx
